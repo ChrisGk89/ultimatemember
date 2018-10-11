@@ -194,6 +194,47 @@ function um_profile_field_filter_hook__time( $value, $data ) {
 }
 add_filter( 'um_profile_field_filter_hook__time', 'um_profile_field_filter_hook__time', 99, 2 );
 
+/**
+ * Translations for day and time
+ * @staticvar array $translations
+ * @param string $locale
+ * @return array
+ */
+function um_get_pickadate_translations( $locale = NULL ) {
+	static $translations = array();
+
+	if ( empty( $locale ) ) {
+		$locale = get_locale();
+	}
+
+	if ( empty( $translations[$locale] ) ) {
+		$translations[$locale] = array();
+
+		if ( file_exists( um_path . 'assets/js/pickadate/translations/' . $locale . '.js' ) ) {
+			$file = file_get_contents( um_path . 'assets/js/pickadate/translations/' . $locale . '.js' );
+		}
+		elseif ( file_exists( um_path . 'assets/js/pickadate/translations/' . substr( $locale, 0, 2 ) . '.js' ) ) {
+			$file = file_get_contents( um_path . 'assets/js/pickadate/translations/' . substr( $locale, 0, 2 ) . '.js' );
+		}
+
+		if ( isset( $file ) ) {
+			preg_match( '/.*monthsFull:\[([^\]]+).*monthsShort:\[([^\]]+).*weekdaysFull:\[([^\]]+).*weekdaysShort:\[([^\]]+).*/i', $file, $matches );
+		}
+
+		if ( isset( $matches ) && count( $matches ) === 5 ) {
+			try {
+				$translations[$locale]['monthsFull'] = json_decode( "[{$matches[1]}]" );
+				$translations[$locale]['monthsShort'] = json_decode( "[{$matches[2]}]" );
+				$translations[$locale]['weekdaysFull'] = json_decode( "[{$matches[3]}]" );
+				$translations[$locale]['weekdaysShort'] = json_decode( "[{$matches[4]}]" );
+			} catch ( Exception $exc ) {
+				error_log( 'Can not decode translations in ' . __FUNCTION__ );
+			}
+		}
+	}
+
+	return $translations[$locale];
+}
 
 /**
  * Date field
@@ -208,6 +249,14 @@ function um_profile_field_filter_hook__date( $value, $data ) {
 		$value = UM()->datetime()->get_age( $value );
 	} else {
 		$value = UM()->datetime()->format( $value, $data['format'] );
+	}
+
+	$translations = um_get_pickadate_translations();
+	if ( !empty( $translations['monthsFull'] ) ) {
+		$value = str_ireplace( array('january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'), $translations['monthsFull'], $value );
+	}
+	if ( !empty( $translations['monthsShort'] ) ) {
+		$value = str_ireplace( array('jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'sept', 'oct', 'nov', 'dec'), $translations['monthsShort'], $value );
 	}
 
 	return $value;
