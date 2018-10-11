@@ -217,7 +217,7 @@ function um_get_pickadate_translations( $locale = NULL ) {
 			$file = file_get_contents( um_path . 'assets/js/pickadate/translations/' . substr( $locale, 0, 2 ) . '.js' );
 		}
 
-		if ( isset( $file ) ) {
+		if ( isset( $file ) && is_string( $file ) ) {
 			preg_match( '/.*monthsFull:\[([^\]]+).*monthsShort:\[([^\]]+).*weekdaysFull:\[([^\]]+).*weekdaysShort:\[([^\]]+).*/i', $file, $matches );
 		}
 
