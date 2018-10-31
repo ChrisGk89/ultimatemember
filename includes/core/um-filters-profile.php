@@ -103,3 +103,43 @@ function um_change_profile_photo_label( $args ) {
 	return $args;
 }
 add_filter( 'um_predefined_fields_hook', 'um_change_profile_photo_label', 10, 1 );
+
+
+if ( !function_exists( 'um_wpml_shortcode_pre_args_setup' ) ) {
+
+	/**
+	 * UM filter - Restore original arguments on translated page
+	 *
+	 * @description Restore original arguments on load shortcode if they are missed in the WPML translation
+	 * @hook um_pre_args_setup
+	 *
+	 * @global SitePress $sitepress
+	 * @param array $args
+	 * @return array
+	 */
+	function um_wpml_shortcode_pre_args_setup( $args ) {
+		if ( UM()->external_integrations()->is_wpml_active() ) {
+			global $sitepress;
+
+			$original_form_id = $sitepress->get_object_id( $args['form_id'], 'post', TRUE, $sitepress->get_default_language() );
+
+			if ( $original_form_id != $args['form_id'] ) {
+				$original_post_data = UM()->query()->post_data( $original_form_id );
+
+				if ( empty( $args['use_custom_settings'] ) && !empty( $original_post_data['use_custom_settings'] ) ) {
+					update_post_meta( $args['form_id'], "_um_{$args['mode']}_use_custom_settings", $original_post_data['use_custom_settings'] );
+				}
+
+				foreach ( $original_post_data as $key => $value ) {
+					if ( empty( $args[$key] ) ) {
+						$args[$key] = $value;
+					}
+				}
+			}
+		}
+
+		return $args;
+	}
+
+	add_filter( 'um_pre_args_setup', 'um_wpml_shortcode_pre_args_setup', 20, 1 );
+}
